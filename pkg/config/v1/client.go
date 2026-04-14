@@ -40,6 +40,8 @@ type ClientCommonConfig struct {
 	// ClientID uniquely identifies this frpc instance.
 	ClientID string `json:"clientID,omitempty"`
 
+	// 新增字段：用于获取动态服务器IP+PORT的URL
+    ServerInfoURL string `json:"serverInfoURL,omitempty"`
 	// ServerAddr specifies the address of the server to connect to. By
 	// default, this value is "0.0.0.0".
 	ServerAddr string `json:"serverAddr,omitempty"`
