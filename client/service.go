@@ -295,7 +295,7 @@ func (svr *Service) keepControllerWorking() {
 
 		// 加入更新服务器地址的新操作
 		if svr.common.ServerAddrURL != "" {
-    		host, port, err := getServerInfoFromURL(svr.common.ServerAddrURL, 10*time.Second)
+    		host, port, err := getServerInfoFromURL(svr.common.ServerInfoURL, 10*time.Second)
     		if err == nil {
         		// 注意：svr.cfg 可能被多个 goroutine 读取，需要加锁保护（这里简化，实际需加锁）
         		svr.common.ServerAddr = host
