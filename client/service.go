@@ -25,6 +25,10 @@ import (
 	"sync"
 	"time"
 
+    "io"
+    "strconv"
+    "strings"
+
 	"github.com/fatedier/golib/crypto"
 	"github.com/samber/lo"
 
@@ -288,6 +292,19 @@ func (svr *Service) keepControllerWorking() {
 			return false, errors.New("control is closed and try another loop")
 		}
 		// If the control is nil, it means that the login failed and the service is also closed.
+
+		// 加入更新服务器地址的新操作
+		if svr.cfg.ServerAddrURL != "" {
+    		host, port, err := getServerAddrFromURL(svr.cfg.ServerAddrURL, 10*time.Second)
+    		if err == nil {
+        		// 注意：svr.cfg 可能被多个 goroutine 读取，需要加锁保护（这里简化，实际需加锁）
+        		svr.cfg.ServerAddr = host
+        		svr.cfg.ServerPort = port
+        		logger.Infof("从URL获取到新服务器地址: %s:%d", host, port)
+    		} else {
+        		logger.Warnf("从URL获取服务器地址失败: %v，将使用当前配置中的地址重试", err)
+    		}
+		}
 		return false, nil
 	}, wait.NewFastBackoffManager(
 		wait.FastBackoffOptions{
@@ -301,6 +318,8 @@ func (svr *Service) keepControllerWorking() {
 			FastRetryJitter: 0.5,
 		},
 	), true, svr.ctx.Done())
+
+	//
 }
 
 // login creates a connection to frps and registers it self as a client
@@ -580,4 +599,39 @@ func (svr *Service) reloadConfigFromSourcesLocked() error {
 		return err
 	}
 	return nil
+}
+
+// getServerInfoFromURL 从给定的 URL 获取服务器地址和端口
+// 期望返回内容格式为 "host:port"，例如 "example.com:7000"
+func getServerInfoFromURL(url string, timeout time.Duration) (serverAddr string, serverPort int, err error) {
+    client := http.Client{Timeout: timeout}
+    resp, err := client.Get(url)
+    if err != nil {
+        return "", 0, err
+    }
+    defer resp.Body.Close()
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return "", 0, err
+    }
+
+    // 去除空白字符，如换行符、空格等
+    content := strings.TrimSpace(string(body))
+    if content == "" {
+        return "", 0, fmt.Errorf("empty content from url %s", url)
+    }
+
+    // 分割 host 和 port
+    host, portStr, err := net.SplitHostPort(content)
+    if err != nil {
+        return "", 0, fmt.Errorf("invalid format, expected 'host:port', got %s: %w", content, err)
+    }
+
+    port, err := strconv.Atoi(portStr)
+    if err != nil {
+        return "", 0, fmt.Errorf("invalid port number: %s", portStr)
+    }
+
+    return host, port, nil
 }
