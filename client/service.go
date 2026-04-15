@@ -295,7 +295,7 @@ func (svr *Service) keepControllerWorking() {
 
 		// 加入更新服务器地址的新操作
 		if svr.common.ServerAddrURL != "" {
-    		host, port, err := getServerAddrFromURL(svr.cfg.ServerAddrURL, 10*time.Second)
+    		host, port, err := getServerInfoFromURL(svr.cfg.ServerAddrURL, 10*time.Second)
     		if err == nil {
         		// 注意：svr.cfg 可能被多个 goroutine 读取，需要加锁保护（这里简化，实际需加锁）
         		svr.common.ServerAddr = host
@@ -603,7 +603,7 @@ func (svr *Service) reloadConfigFromSourcesLocked() error {
 
 // getServerInfoFromURL 从给定的 URL 获取服务器地址和端口
 // 期望返回内容格式为 "host:port"，例如 "example.com:7000"
-func getServerInfoFromURL(url string, timeout time.Duration) (serverAddr string, serverPort int, err error) {
+func v3getServerInfoFromURL(url string, timeout time.Duration) (serverAddr string, serverPort int, err error) {
     client := http.Client{Timeout: timeout}
     resp, err := client.Get(url)
     if err != nil {
