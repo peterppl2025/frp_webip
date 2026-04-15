@@ -294,12 +294,12 @@ func (svr *Service) keepControllerWorking() {
 		// If the control is nil, it means that the login failed and the service is also closed.
 
 		// 加入更新服务器地址的新操作
-		if svr.cfg.ServerAddrURL != "" {
+		if svr.common.ServerAddrURL != "" {
     		host, port, err := getServerAddrFromURL(svr.cfg.ServerAddrURL, 10*time.Second)
     		if err == nil {
         		// 注意：svr.cfg 可能被多个 goroutine 读取，需要加锁保护（这里简化，实际需加锁）
-        		svr.cfg.ServerAddr = host
-        		svr.cfg.ServerPort = port
+        		svr.common.ServerAddr = host
+        		svr.common.ServerPort = port
         		logger.Infof("从URL获取到新服务器地址: %s:%d", host, port)
     		} else {
         		logger.Warnf("从URL获取服务器地址失败: %v，将使用当前配置中的地址重试", err)
